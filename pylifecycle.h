@@ -1,74 +1,64 @@
-
-/* Interfaces to configure, query, create & destroy the Python runtime */
-
-#ifndef Py_PYLIFECYCLE_H
-#define Py_PYLIFECYCLE_H
-#ifdef __cplusplus
-extern "C" {
+#ifndef Py_CPYTHON_PYLIFECYCLE_H
+#  error "this header file must not be included directly"
 #endif
+
+/* Py_FrozenMain is kept out of the Limited API until documented and present
+   in all builds of Python */
+PyAPI_FUNC(int) Py_FrozenMain(int argc, char **argv);
+
+/* Only used by applications that embed the interpreter and need to
+ * override the standard encoding determination mechanism
+ */
+PyAPI_FUNC(int) Py_SetStandardStreamEncoding(const char *encoding,
+                                             const char *errors);
+
+/* PEP 432 Multi-phase initialization API (Private while provisional!) */
+
+PyAPI_FUNC(PyStatus) Py_PreInitialize(
+    const PyPreConfig *src_config);
+PyAPI_FUNC(PyStatus) Py_PreInitializeFromBytesArgs(
+    const PyPreConfig *src_config,
+    Py_ssize_t argc,
+    char **argv);
+PyAPI_FUNC(PyStatus) Py_PreInitializeFromArgs(
+    const PyPreConfig *src_config,
+    Py_ssize_t argc,
+    wchar_t **argv);
+
+PyAPI_FUNC(int) _Py_IsCoreInitialized(void);
 
 
 /* Initialization and finalization */
-PyAPI_FUNC(void) Py_Initialize(void);
-PyAPI_FUNC(void) Py_InitializeEx(int);
-PyAPI_FUNC(void) Py_Finalize(void);
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03060000
-PyAPI_FUNC(int) Py_FinalizeEx(void);
-#endif
-PyAPI_FUNC(int) Py_IsInitialized(void);
 
-/* Subinterpreter support */
-PyAPI_FUNC(PyThreadState *) Py_NewInterpreter(void);
-PyAPI_FUNC(void) Py_EndInterpreter(PyThreadState *);
+PyAPI_FUNC(PyStatus) Py_InitializeFromConfig(
+    const PyConfig *config);
+PyAPI_FUNC(PyStatus) _Py_InitializeMain(void);
+
+PyAPI_FUNC(int) Py_RunMain(void);
 
 
-/* Py_PyAtExit is for the atexit module, Py_AtExit is for low-level
- * exit functions.
- */
-PyAPI_FUNC(int) Py_AtExit(void (*func)(void));
+PyAPI_FUNC(void) _Py_NO_RETURN Py_ExitStatusException(PyStatus err);
 
-PyAPI_FUNC(void) _Py_NO_RETURN Py_Exit(int);
+/* Restore signals that the interpreter has called SIG_IGN on to SIG_DFL. */
+PyAPI_FUNC(void) _Py_RestoreSignals(void);
 
-/* Bootstrap __main__ (defined in Modules/main.c) */
-PyAPI_FUNC(int) Py_Main(int argc, wchar_t **argv);
-PyAPI_FUNC(int) Py_BytesMain(int argc, char **argv);
+PyAPI_FUNC(int) Py_FdIsInteractive(FILE *, const char *);
+PyAPI_FUNC(int) _Py_FdIsInteractive(FILE *fp, PyObject *filename);
 
-/* In pathconfig.c */
-PyAPI_FUNC(void) Py_SetProgramName(const wchar_t *);
-PyAPI_FUNC(wchar_t *) Py_GetProgramName(void);
+PyAPI_FUNC(void) _Py_SetProgramFullPath(const wchar_t *);
 
-PyAPI_FUNC(void) Py_SetPythonHome(const wchar_t *);
-PyAPI_FUNC(wchar_t *) Py_GetPythonHome(void);
+PyAPI_FUNC(const char *) _Py_gitidentifier(void);
+PyAPI_FUNC(const char *) _Py_gitversion(void);
 
-PyAPI_FUNC(wchar_t *) Py_GetProgramFullPath(void);
+PyAPI_FUNC(int) _Py_IsFinalizing(void);
 
-PyAPI_FUNC(wchar_t *) Py_GetPrefix(void);
-PyAPI_FUNC(wchar_t *) Py_GetExecPrefix(void);
-PyAPI_FUNC(wchar_t *) Py_GetPath(void);
-PyAPI_FUNC(void)      Py_SetPath(const wchar_t *);
-#ifdef MS_WINDOWS
-int _Py_CheckPython3(void);
-#endif
+/* Random */
+PyAPI_FUNC(int) _PyOS_URandom(void *buffer, Py_ssize_t size);
+PyAPI_FUNC(int) _PyOS_URandomNonblock(void *buffer, Py_ssize_t size);
 
-/* In their own files */
-PyAPI_FUNC(const char *) Py_GetVersion(void);
-PyAPI_FUNC(const char *) Py_GetPlatform(void);
-PyAPI_FUNC(const char *) Py_GetCopyright(void);
-PyAPI_FUNC(const char *) Py_GetCompiler(void);
-PyAPI_FUNC(const char *) Py_GetBuildInfo(void);
+/* Legacy locale support */
+PyAPI_FUNC(int) _Py_CoerceLegacyLocale(int warn);
+PyAPI_FUNC(int) _Py_LegacyLocaleDetected(int warn);
+PyAPI_FUNC(char *) _Py_SetLocaleFromEnv(int category);
 
-/* Signals */
-typedef void (*PyOS_sighandler_t)(int);
-PyAPI_FUNC(PyOS_sighandler_t) PyOS_getsig(int);
-PyAPI_FUNC(PyOS_sighandler_t) PyOS_setsig(int, PyOS_sighandler_t);
-
-#ifndef Py_LIMITED_API
-#  define Py_CPYTHON_PYLIFECYCLE_H
-#  include  "cpython/pylifecycle.h"
-#  undef Py_CPYTHON_PYLIFECYCLE_H
-#endif
-
-#ifdef __cplusplus
-}
-#endif
-#endif /* !Py_PYLIFECYCLE_H */
+PyAPI_FUNC(PyThreadState *) _Py_NewInterpreter(int isolated_subinterpreter);

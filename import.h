@@ -1,98 +1,46 @@
-/* Module definition and import interface */
-
-#ifndef Py_IMPORT_H
-#define Py_IMPORT_H
-#ifdef __cplusplus
-extern "C" {
+#ifndef Py_CPYTHON_IMPORT_H
+#  error "this header file must not be included directly"
 #endif
 
-PyAPI_FUNC(long) PyImport_GetMagicNumber(void);
-PyAPI_FUNC(const char *) PyImport_GetMagicTag(void);
-PyAPI_FUNC(PyObject *) PyImport_ExecCodeModule(
-    const char *name,           /* UTF-8 encoded string */
-    PyObject *co
-    );
-PyAPI_FUNC(PyObject *) PyImport_ExecCodeModuleEx(
-    const char *name,           /* UTF-8 encoded string */
-    PyObject *co,
-    const char *pathname        /* decoded from the filesystem encoding */
-    );
-PyAPI_FUNC(PyObject *) PyImport_ExecCodeModuleWithPathnames(
-    const char *name,           /* UTF-8 encoded string */
-    PyObject *co,
-    const char *pathname,       /* decoded from the filesystem encoding */
-    const char *cpathname       /* decoded from the filesystem encoding */
-    );
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03030000
-PyAPI_FUNC(PyObject *) PyImport_ExecCodeModuleObject(
-    PyObject *name,
-    PyObject *co,
-    PyObject *pathname,
-    PyObject *cpathname
-    );
-#endif
-PyAPI_FUNC(PyObject *) PyImport_GetModuleDict(void);
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03070000
-PyAPI_FUNC(PyObject *) PyImport_GetModule(PyObject *name);
-#endif
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03030000
-PyAPI_FUNC(PyObject *) PyImport_AddModuleObject(
-    PyObject *name
-    );
-#endif
-PyAPI_FUNC(PyObject *) PyImport_AddModule(
-    const char *name            /* UTF-8 encoded string */
-    );
-PyAPI_FUNC(PyObject *) PyImport_ImportModule(
-    const char *name            /* UTF-8 encoded string */
-    );
-PyAPI_FUNC(PyObject *) PyImport_ImportModuleNoBlock(
-    const char *name            /* UTF-8 encoded string */
-    );
-PyAPI_FUNC(PyObject *) PyImport_ImportModuleLevel(
-    const char *name,           /* UTF-8 encoded string */
-    PyObject *globals,
-    PyObject *locals,
-    PyObject *fromlist,
-    int level
-    );
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03050000
-PyAPI_FUNC(PyObject *) PyImport_ImportModuleLevelObject(
-    PyObject *name,
-    PyObject *globals,
-    PyObject *locals,
-    PyObject *fromlist,
-    int level
-    );
-#endif
+PyMODINIT_FUNC PyInit__imp(void);
 
-#define PyImport_ImportModuleEx(n, g, l, f) \
-    PyImport_ImportModuleLevel(n, g, l, f, 0)
+PyAPI_FUNC(int) _PyImport_IsInitialized(PyInterpreterState *);
 
-PyAPI_FUNC(PyObject *) PyImport_GetImporter(PyObject *path);
-PyAPI_FUNC(PyObject *) PyImport_Import(PyObject *name);
-PyAPI_FUNC(PyObject *) PyImport_ReloadModule(PyObject *m);
-#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03030000
-PyAPI_FUNC(int) PyImport_ImportFrozenModuleObject(
-    PyObject *name
+PyAPI_FUNC(PyObject *) _PyImport_GetModuleId(struct _Py_Identifier *name);
+PyAPI_FUNC(int) _PyImport_SetModule(PyObject *name, PyObject *module);
+PyAPI_FUNC(int) _PyImport_SetModuleString(const char *name, PyObject* module);
+
+PyAPI_FUNC(void) _PyImport_AcquireLock(void);
+PyAPI_FUNC(int) _PyImport_ReleaseLock(void);
+
+/* Obsolete since 3.5, will be removed in 3.11. */
+Py_DEPRECATED(3.10) PyAPI_FUNC(PyObject *) _PyImport_FindExtensionObject(PyObject *, PyObject *);
+
+PyAPI_FUNC(int) _PyImport_FixupBuiltin(
+    PyObject *mod,
+    const char *name,            /* UTF-8 encoded string */
+    PyObject *modules
     );
-#endif
-PyAPI_FUNC(int) PyImport_ImportFrozenModule(
-    const char *name            /* UTF-8 encoded string */
-    );
+PyAPI_FUNC(int) _PyImport_FixupExtensionObject(PyObject*, PyObject *,
+                                               PyObject *, PyObject *);
 
-PyAPI_FUNC(int) PyImport_AppendInittab(
-    const char *name,           /* ASCII encoded string */
-    PyObject* (*initfunc)(void)
-    );
+struct _inittab {
+    const char *name;           /* ASCII encoded string */
+    PyObject* (*initfunc)(void);
+};
+PyAPI_DATA(struct _inittab *) PyImport_Inittab;
+PyAPI_FUNC(int) PyImport_ExtendInittab(struct _inittab *newtab);
 
-#ifndef Py_LIMITED_API
-#  define Py_CPYTHON_IMPORT_H
-#  include  "cpython/import.h"
-#  undef Py_CPYTHON_IMPORT_H
-#endif
+struct _frozen {
+    const char *name;                 /* ASCII encoded string */
+    const unsigned char *code;
+    int size;
+};
 
-#ifdef __cplusplus
-}
-#endif
-#endif /* !Py_IMPORT_H */
+/* Embedding apps may change this pointer to point to their favorite
+   collection of frozen modules: */
+
+PyAPI_DATA(const struct _frozen *) PyImport_FrozenModules;
+
+PyAPI_DATA(PyObject *) _PyImport_GetModuleAttr(PyObject *, PyObject *);
+PyAPI_DATA(PyObject *) _PyImport_GetModuleAttrString(const char *, const char *);
